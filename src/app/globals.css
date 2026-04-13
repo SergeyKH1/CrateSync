@@ -46,7 +46,6 @@ body {
   animation: spin 1s linear infinite;
 }
 
-/* Custom scrollbar for dark theme */
 ::-webkit-scrollbar {
   width: 8px;
 }
