@@ -160,8 +160,86 @@ async function getSpotifyToken(): Promise<string> {
 }
 
 /**
- * Fetch playlist data from Spotify. Falls back to mock data when
- * SPOTIFY_CLIENT_ID is not set.
+ * Fetch playlist data via Spotify's embed page.
+ * This approach requires no API credentials and works for any public playlist,
+ * including Spotify-owned editorial playlists.
+ */
+async function fetchPlaylistViaEmbed(
+  playlistId: string
+): Promise<PlaylistData> {
+  const embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}`;
+  const res = await fetch(embedUrl, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch playlist embed: ${res.status}`);
+  }
+
+  const html = await res.text();
+
+  // Extract __NEXT_DATA__ JSON from the embed page
+  const match = html.match(
+    /<script\s+id="__NEXT_DATA__"[^>]*>(.*?)<\/script>/
+  );
+  if (!match) {
+    throw new Error("Could not parse playlist data from Spotify");
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data: any = JSON.parse(match[1]);
+  const entity = data?.props?.pageProps?.state?.data?.entity;
+
+  if (!entity) {
+    throw new Error("Playlist data not found in Spotify response");
+  }
+
+  const trackList: Array<{
+    uri: string;
+    title: string;
+    subtitle: string;
+    duration: number;
+  }> = entity.trackList ?? [];
+
+  const tracks: SpotifyTrack[] = trackList.map((t, i) => {
+    const idMatch = t.uri.match(/spotify:track:(\w+)/);
+    // subtitle contains artists separated by non-breaking spaces and commas
+    const artists = t.subtitle
+      .replace(/\u00a0/g, " ")
+      .split(",")
+      .map((a: string) => a.trim())
+      .filter(Boolean);
+
+    return {
+      id: idMatch ? idMatch[1] : `embed-${i}`,
+      name: t.title,
+      artists,
+      album: "",
+      duration_ms: t.duration,
+      spotify_url: idMatch
+        ? `https://open.spotify.com/track/${idMatch[1]}`
+        : "",
+    };
+  });
+
+  return {
+    name: entity.name ?? "Unknown Playlist",
+    description: undefined,
+    imageUrl: entity.coverArt?.sources?.[0]?.url,
+    trackCount: tracks.length,
+    tracks,
+    source: "spotify",
+  };
+}
+
+/**
+ * Fetch playlist data from Spotify.
+ * Uses the embed page (no auth required) as primary method.
+ * Falls back to Web API if credentials are set and embed fails.
+ * Falls back to mock data if nothing else works.
  */
 export async function fetchPlaylist(url: string): Promise<PlaylistData> {
   const parsed = parseSpotifyUrl(url);
@@ -175,16 +253,41 @@ export async function fetchPlaylist(url: string): Promise<PlaylistData> {
     );
   }
 
-  // Mock mode when credentials are not configured
-  if (!process.env.SPOTIFY_CLIENT_ID) {
-    return getMockPlaylist();
+  // Primary: use embed page (works for all public playlists, no auth needed)
+  try {
+    return await fetchPlaylistViaEmbed(parsed.id);
+  } catch (embedError) {
+    console.warn(
+      "Embed fetch failed, trying API fallback:",
+      embedError instanceof Error ? embedError.message : embedError
+    );
   }
 
+  // Fallback: use Web API if credentials are configured
+  if (process.env.SPOTIFY_CLIENT_ID) {
+    try {
+      return await fetchPlaylistViaApi(parsed.id);
+    } catch (apiError) {
+      console.warn(
+        "API fetch failed:",
+        apiError instanceof Error ? apiError.message : apiError
+      );
+    }
+  }
+
+  // Last resort: mock data
+  console.warn("All fetch methods failed, returning mock data");
+  return getMockPlaylist();
+}
+
+/**
+ * Fetch playlist via the official Spotify Web API (requires credentials).
+ */
+async function fetchPlaylistViaApi(playlistId: string): Promise<PlaylistData> {
   const token = await getSpotifyToken();
 
-  // Fetch playlist metadata
   const playlistRes = await fetch(
-    `https://api.spotify.com/v1/playlists/${parsed.id}`,
+    `https://api.spotify.com/v1/playlists/${playlistId}`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
 
@@ -199,10 +302,9 @@ export async function fetchPlaylist(url: string): Promise<PlaylistData> {
   }
   const playlist: SpotifyPlaylist = await playlistRes.json();
 
-  // Collect all tracks (handle pagination)
   const tracks: SpotifyTrack[] = [];
   let nextUrl: string | null =
-    `https://api.spotify.com/v1/playlists/${parsed.id}/tracks?limit=100`;
+    `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100`;
 
   while (nextUrl) {
     const tracksRes = await fetch(nextUrl, {
@@ -210,9 +312,7 @@ export async function fetchPlaylist(url: string): Promise<PlaylistData> {
     });
 
     if (!tracksRes.ok) {
-      throw new Error(
-        `Spotify API error fetching tracks: ${tracksRes.status}`
-      );
+      throw new Error(`Spotify API error fetching tracks: ${tracksRes.status}`);
     }
 
     interface SpotifyPage {
