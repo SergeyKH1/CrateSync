@@ -13,6 +13,7 @@ import { ExtensionStatus } from "@/components/ExtensionStatus";
 import { MatchResolutionModal } from "@/components/MatchResolutionModal";
 import { GuidedWishlistFlow } from "@/components/GuidedWishlistFlow";
 import { BookmarkletButton } from "@/components/BookmarkletButton";
+import { SpotifyLoginButton } from "@/components/SpotifyLoginButton";
 
 function ResultsContent() {
   const searchParams = useSearchParams();
@@ -166,6 +167,7 @@ function ResultsContent() {
           <div className="flex items-center gap-3">
             {results && <ExportButton matches={results.matches} />}
             <ExtensionStatus />
+            <SpotifyLoginButton />
           </div>
         </div>
       </header>

@@ -315,7 +315,10 @@ async function fetchTracksWithToken(
  * Falls back to Web API if credentials are set and embed fails.
  * Falls back to mock data if nothing else works.
  */
-export async function fetchPlaylist(url: string): Promise<PlaylistData> {
+export async function fetchPlaylist(
+  url: string,
+  userToken?: string
+): Promise<PlaylistData> {
   const parsed = parseSpotifyUrl(url);
   if (!parsed) {
     throw new Error("Invalid Spotify URL");
@@ -325,6 +328,18 @@ export async function fetchPlaylist(url: string): Promise<PlaylistData> {
     throw new Error(
       `Unsupported Spotify type: ${parsed.type}. Only playlists are supported.`
     );
+  }
+
+  // If user is logged in with Spotify, use their token (handles private playlists)
+  if (userToken) {
+    try {
+      return await fetchPlaylistWithToken(parsed.id, userToken);
+    } catch (userTokenError) {
+      console.warn(
+        "User token fetch failed, trying embed fallback:",
+        userTokenError instanceof Error ? userTokenError.message : userTokenError
+      );
+    }
   }
 
   // Primary: use embed page (works for all public playlists, no auth needed)
@@ -359,7 +374,16 @@ export async function fetchPlaylist(url: string): Promise<PlaylistData> {
  */
 async function fetchPlaylistViaApi(playlistId: string): Promise<PlaylistData> {
   const token = await getSpotifyToken();
+  return fetchPlaylistWithToken(playlistId, token);
+}
 
+/**
+ * Fetch playlist using a provided access token (user OAuth or client credentials).
+ */
+async function fetchPlaylistWithToken(
+  playlistId: string,
+  token: string
+): Promise<PlaylistData> {
   const playlistRes = await fetch(
     `https://api.spotify.com/v1/playlists/${playlistId}`,
     { headers: { Authorization: `Bearer ${token}` } }

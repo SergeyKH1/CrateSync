@@ -1,8 +1,14 @@
 import { PlaylistInput } from "@/components/PlaylistInput";
+import { SpotifyLoginButton } from "@/components/SpotifyLoginButton";
 
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4 py-16">
+      {/* Spotify login */}
+      <div className="absolute top-4 right-4">
+        <SpotifyLoginButton />
+      </div>
+
       {/* Hero section */}
       <div className="flex flex-col items-center text-center space-y-6 max-w-2xl">
         <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 via-emerald-300 to-teal-400 bg-clip-text text-transparent">
