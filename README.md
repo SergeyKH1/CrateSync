@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CrateSync
 
-## Getting Started
+Sync your Spotify playlists to Bandcamp wishlists. CrateSync searches Bandcamp for each track in a Spotify playlist, shows match confidence, and lets you add results to your Bandcamp wishlist or cart via a companion Chrome extension.
 
-First, run the development server:
+## Features
+
+- Paste a Spotify playlist URL and fetch all tracks
+- Fuzzy-match each track against Bandcamp search results (exact, close, not found)
+- One-click add to Bandcamp wishlist or cart via Chrome extension
+- Alternative search links for Beatport, Juno, and Traxsource when no Bandcamp match is found
+- Export sync results to CSV
+- Works without Spotify API credentials using built-in mock data
+
+## Quick Start
 
 ```bash
+git clone <repo-url> CrateSync
+cd CrateSync
+npm install
+cp .env.example .env.local   # optional: add Spotify credentials
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copy `.env.example` to `.env.local` and fill in the values if you want live Spotify data. When the variables are not set, the app uses mock playlist data.
 
-## Learn More
+| Variable              | Description                        |
+| --------------------- | ---------------------------------- |
+| SPOTIFY_CLIENT_ID     | Spotify app client ID (optional)   |
+| SPOTIFY_CLIENT_SECRET | Spotify app client secret (optional) |
 
-To learn more about Next.js, take a look at the following resources:
+## Chrome Extension Setup
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The companion extension adds tracks to your Bandcamp wishlist directly from the CrateSync UI.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Open `chrome://extensions/` in Chrome
+2. Enable **Developer mode**
+3. Click **Load unpacked** and select the `extension/` directory
+4. Navigate to a Bandcamp page to activate the extension
 
-## Deploy on Vercel
+## Available Scripts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Command           | Description                        |
+| ----------------- | ---------------------------------- |
+| `npm run dev`     | Start the Next.js dev server       |
+| `npm run build`   | Production build                   |
+| `npm start`       | Start the production server        |
+| `npm run lint`    | Run ESLint                         |
+| `npm test`        | Run Jest tests                     |
+| `npm run test:watch` | Run tests in watch mode         |
+| `npm run test:ci` | Run tests with coverage (CI mode)  |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Tech Stack
+
+- **Framework:** Next.js 14 (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **Search:** Fuse.js (fuzzy matching)
+- **Testing:** Jest, Testing Library
+- **CI:** GitHub Actions
+
+## Project Structure
+
+```
+src/
+  app/          # Next.js App Router pages and layouts
+  components/   # React components
+  hooks/        # Custom React hooks
+  lib/          # Utility modules (Spotify, Bandcamp, matching, CSV)
+extension/      # Chrome extension (manifest v3)
+```
+
+## Contributing
+
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feature/my-feature`)
+3. Commit your changes
+4. Open a pull request
+
+## License
+
+MIT
