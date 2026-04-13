@@ -16,6 +16,7 @@ export interface BandcampResult {
   imageUrl?: string;
   price?: string;
   type: "track" | "album";
+  bandcampId?: string;
 }
 
 export type MatchStatus = "exact" | "close" | "not_found";

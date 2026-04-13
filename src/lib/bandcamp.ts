@@ -77,11 +77,15 @@ function parseBandcampResults(html: string): BandcampResult[] {
       }
     }
 
-    // Extract URL
+    // Extract URL and Bandcamp item ID
     const urlMatch = block.match(
       /class="itemurl"[^>]*>\s*<a[^>]*href="([^"]+)"/
     );
     const itemUrl = urlMatch ? urlMatch[1].trim() : "";
+
+    // Extract search_item_id (this is the Bandcamp track/album ID, used for embeds)
+    const itemIdMatch = itemUrl.match(/search_item_id=(\d+)/);
+    const bandcampId = itemIdMatch ? itemIdMatch[1] : undefined;
 
     // Extract image
     const imgMatch = block.match(
@@ -113,6 +117,7 @@ function parseBandcampResults(html: string): BandcampResult[] {
         imageUrl,
         price,
         type,
+        bandcampId,
       });
     }
   }
