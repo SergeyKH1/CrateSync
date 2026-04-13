@@ -173,6 +173,7 @@ async function fetchPlaylistViaEmbed(
       "User-Agent":
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
     },
+    cache: "no-store",
   });
 
   if (!res.ok) {

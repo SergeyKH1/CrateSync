@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import type { SyncResults, SyncProgress, PlaylistData, TrackMatch } from "@/lib/types";
+import type { SyncResults, SyncProgress, PlaylistData, TrackMatch, BandcampResult } from "@/lib/types";
+import { matchTrack } from "@/lib/matching";
 
 export function usePlaylistSync(url: string) {
   const [results, setResults] = useState<SyncResults | null>(null);
@@ -41,61 +42,37 @@ export function usePlaylistSync(url: string) {
         current: playlist.tracks[0]?.name,
       });
 
-      // Step 2: Search Bandcamp for matches (streaming response)
-      const batchRes = await fetch("/api/bandcamp/batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tracks: playlist.tracks }),
-      });
-
-      if (!batchRes.ok) {
-        const data = await batchRes.json();
-        throw new Error(data.error || "Failed to search Bandcamp");
-      }
-
+      // Step 2: Search Bandcamp for each track individually
       const matches: TrackMatch[] = [];
 
-      // Try streaming response
-      if (batchRes.body) {
-        const reader = batchRes.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
+      for (let i = 0; i < playlist.tracks.length; i++) {
+        const track = playlist.tracks[i];
 
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+        try {
+          const searchRes = await fetch("/api/bandcamp/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query: track.name,
+              artist: track.artists[0] ?? "",
+            }),
+          });
 
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
+          const results: BandcampResult[] = searchRes.ok
+            ? await searchRes.json()
+            : [];
 
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed) continue;
-
-            try {
-              const event = JSON.parse(trimmed);
-
-              // Backend sends: { index, total, match }
-              if (event.match) {
-                matches.push(event.match as TrackMatch);
-                setProgress({
-                  total: event.total ?? playlist.tracks.length,
-                  completed: (event.index ?? 0) + 1,
-                  current: event.match.track?.name,
-                  status: "searching",
-                });
-              }
-            } catch {
-              // Skip malformed JSON lines
-            }
-          }
+          matches.push(matchTrack(track, results));
+        } catch {
+          matches.push(matchTrack(track, []));
         }
-      } else {
-        // Fallback: non-streaming response
-        const data = await batchRes.json();
-        matches.push(...(data.matches || []));
+
+        setProgress({
+          total: playlist.tracks.length,
+          completed: i + 1,
+          current: playlist.tracks[i + 1]?.name,
+          status: "searching",
+        });
       }
 
       // Compute stats
