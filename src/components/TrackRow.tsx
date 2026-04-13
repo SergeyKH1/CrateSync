@@ -7,6 +7,7 @@ interface TrackRowProps {
   match: TrackMatch;
   index: number;
   selected: boolean;
+  extensionInstalled: boolean;
   onToggleSelect: (id: string) => void;
   onPickMatch: (match: TrackMatch) => void;
   onWishlistAction: (url: string, trackName: string, action: WishlistAction) => void;
@@ -16,6 +17,7 @@ export function TrackRow({
   match,
   index,
   selected,
+  extensionInstalled,
   onToggleSelect,
   onPickMatch,
   onWishlistAction,
@@ -52,24 +54,35 @@ export function TrackRow({
       {/* Action button */}
       <div className="shrink-0">
         {status === "exact" && bandcampMatch && (
-          <div className="flex gap-1">
-            <button
-              onClick={() =>
-                onWishlistAction(bandcampMatch.url, track.name, "wishlist")
-              }
-              className="rounded-md bg-emerald-600/80 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-emerald-500 cursor-pointer"
+          extensionInstalled ? (
+            <div className="flex gap-1">
+              <button
+                onClick={() =>
+                  onWishlistAction(bandcampMatch.url, track.name, "wishlist")
+                }
+                className="rounded-md bg-emerald-600/80 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-emerald-500 cursor-pointer"
+              >
+                + Wishlist
+              </button>
+              <button
+                onClick={() =>
+                  onWishlistAction(bandcampMatch.url, track.name, "cart")
+                }
+                className="hidden rounded-md bg-emerald-600/40 px-2.5 py-1 text-xs font-medium text-emerald-300 transition-colors hover:bg-emerald-600/60 sm:block cursor-pointer"
+              >
+                + Cart
+              </button>
+            </div>
+          ) : (
+            <a
+              href={bandcampMatch.url.split("?")[0]}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-md bg-emerald-600/80 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-emerald-500 inline-block"
             >
-              + Wishlist
-            </button>
-            <button
-              onClick={() =>
-                onWishlistAction(bandcampMatch.url, track.name, "cart")
-              }
-              className="hidden rounded-md bg-emerald-600/40 px-2.5 py-1 text-xs font-medium text-emerald-300 transition-colors hover:bg-emerald-600/60 sm:block cursor-pointer"
-            >
-              + Cart
-            </button>
-          </div>
+              Open on Bandcamp
+            </a>
+          )
         )}
 
         {status === "close" && (

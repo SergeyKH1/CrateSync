@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import type { MatchStatus, TrackMatch, BandcampResult, WishlistAction } from "@/lib/types";
 import { usePlaylistSync } from "@/hooks/usePlaylistSync";
+import { useExtension } from "@/hooks/useExtension";
 import { TrackList } from "@/components/TrackList";
 import { ProgressBar } from "@/components/ProgressBar";
 import { ExportButton } from "@/components/ExportButton";
@@ -15,6 +16,7 @@ function ResultsContent() {
   const searchParams = useSearchParams();
   const url = searchParams.get("url") || "";
   const { results, progress, error, startSync } = usePlaylistSync(url);
+  const { installed: extensionInstalled } = useExtension();
 
   const [filter, setFilter] = useState<MatchStatus | "all">("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -295,6 +297,7 @@ function ResultsContent() {
                 matches={results.matches}
                 filter={filter}
                 selectedIds={selectedIds}
+                extensionInstalled={extensionInstalled}
                 onToggleSelect={toggleSelect}
                 onPickMatch={handlePickMatch}
                 onWishlistAction={handleWishlistAction}

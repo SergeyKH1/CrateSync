@@ -7,6 +7,7 @@ interface TrackListProps {
   matches: TrackMatch[];
   filter: MatchStatus | "all";
   selectedIds: Set<string>;
+  extensionInstalled: boolean;
   onToggleSelect: (id: string) => void;
   onPickMatch: (match: TrackMatch) => void;
   onWishlistAction: (url: string, trackName: string, action: WishlistAction) => void;
@@ -16,6 +17,7 @@ export function TrackList({
   matches,
   filter,
   selectedIds,
+  extensionInstalled,
   onToggleSelect,
   onPickMatch,
   onWishlistAction,
@@ -48,6 +50,7 @@ export function TrackList({
           match={match}
           index={idx}
           selected={selectedIds.has(match.track.id)}
+          extensionInstalled={extensionInstalled}
           onToggleSelect={onToggleSelect}
           onPickMatch={onPickMatch}
           onWishlistAction={onWishlistAction}

@@ -12,7 +12,7 @@ export function MatchBadge({ status, confidence }: MatchBadgeProps) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
         Found
-        <span className="text-emerald-500/70">{Math.round(confidence * 100)}%</span>
+        <span className="text-emerald-500/70">{Math.round(confidence)}%</span>
       </span>
     );
   }
