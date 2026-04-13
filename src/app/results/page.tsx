@@ -11,6 +11,8 @@ import { ProgressBar } from "@/components/ProgressBar";
 import { ExportButton } from "@/components/ExportButton";
 import { ExtensionStatus } from "@/components/ExtensionStatus";
 import { MatchResolutionModal } from "@/components/MatchResolutionModal";
+import { GuidedWishlistFlow } from "@/components/GuidedWishlistFlow";
+import { BookmarkletButton } from "@/components/BookmarkletButton";
 
 function ResultsContent() {
   const searchParams = useSearchParams();
@@ -21,6 +23,8 @@ function ResultsContent() {
   const [filter, setFilter] = useState<MatchStatus | "all">("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [modalTrack, setModalTrack] = useState<TrackMatch | null>(null);
+  const [showGuidedFlow, setShowGuidedFlow] = useState(false);
+  const [guidedFlowMessage, setGuidedFlowMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (url) startSync();
@@ -232,6 +236,11 @@ function ResultsContent() {
               </div>
             </div>
 
+            {/* Bookmarklet */}
+            <div className="mb-6">
+              <BookmarkletButton matches={results.matches} />
+            </div>
+
             {/* Filter tabs */}
             <div className="mb-4 flex items-center gap-1 border-b border-gray-800">
               {filters.map((f) => (
@@ -289,7 +298,38 @@ function ResultsContent() {
                   </button>
                 </div>
               )}
+
+              {results.stats.exact > 0 && (
+                <button
+                  onClick={() => setShowGuidedFlow(true)}
+                  className="ml-auto rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500 cursor-pointer flex items-center gap-1.5"
+                >
+                  <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Quick Add All
+                </button>
+              )}
             </div>
+
+            {/* Guided flow completion message */}
+            {guidedFlowMessage && (
+              <div className="mb-3 flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5">
+                <p className="text-sm text-emerald-300">{guidedFlowMessage}</p>
+                <button
+                  onClick={() => setGuidedFlowMessage(null)}
+                  className="ml-3 shrink-0 text-emerald-400 hover:text-emerald-300 cursor-pointer"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
 
             {/* Track list */}
             <div className="rounded-lg border border-gray-800 bg-gray-900/50">
@@ -327,6 +367,28 @@ function ResultsContent() {
           options={modalTrack.closeMatches}
           onSelect={handleModalSelect}
           onSkip={() => setModalTrack(null)}
+        />
+      )}
+
+      {/* Guided wishlist flow */}
+      {showGuidedFlow && results && (
+        <GuidedWishlistFlow
+          tracks={results.matches
+            .filter((m) => m.status === "exact" && m.bandcampMatch)
+            .map((m) => ({
+              trackName: m.track.name,
+              artistName: m.bandcampMatch!.artist,
+              bandcampUrl: m.bandcampMatch!.url,
+              imageUrl: m.bandcampMatch!.imageUrl,
+            }))}
+          onClose={() => setShowGuidedFlow(false)}
+          onComplete={(r) => {
+            setShowGuidedFlow(false);
+            setGuidedFlowMessage(
+              `Done! ${r.wishlisted} track${r.wishlisted !== 1 ? "s" : ""} wishlisted` +
+                (r.skipped > 0 ? `, ${r.skipped} skipped` : "")
+            );
+          }}
         />
       )}
     </div>
