@@ -167,11 +167,14 @@ async function getSpotifyToken(): Promise<string> {
 async function fetchPlaylistViaEmbed(
   playlistId: string
 ): Promise<PlaylistData> {
-  const embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}`;
+  const cacheBust = Date.now();
+  const embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}?_cb=${cacheBust}`;
   const res = await fetch(embedUrl, {
     headers: {
       "User-Agent":
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
     },
     cache: "no-store",
   });
@@ -183,21 +186,42 @@ async function fetchPlaylistViaEmbed(
   const html = await res.text();
 
   // Extract __NEXT_DATA__ JSON from the embed page
-  const match = html.match(
+  const ndMatch = html.match(
     /<script\s+id="__NEXT_DATA__"[^>]*>(.*?)<\/script>/
   );
-  if (!match) {
+  if (!ndMatch) {
     throw new Error("Could not parse playlist data from Spotify");
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const data: any = JSON.parse(match[1]);
+  const data: any = JSON.parse(ndMatch[1]);
   const entity = data?.props?.pageProps?.state?.data?.entity;
 
   if (!entity) {
     throw new Error("Playlist data not found in Spotify response");
   }
 
+  // Try to use the embed's access token to call the real API for fresh data
+  const embedToken = findNestedKey(data, "accessToken");
+  if (embedToken) {
+    try {
+      const apiTracks = await fetchTracksWithToken(playlistId, embedToken);
+      if (apiTracks.length > 0) {
+        return {
+          name: entity.name ?? "Unknown Playlist",
+          description: undefined,
+          imageUrl: entity.coverArt?.sources?.[0]?.url,
+          trackCount: apiTracks.length,
+          tracks: apiTracks,
+          source: "spotify",
+        };
+      }
+    } catch {
+      // Fall through to embed data
+    }
+  }
+
+  // Fallback: use the track list from the embed page (may be cached/stale)
   const trackList: Array<{
     uri: string;
     title: string;
@@ -207,7 +231,6 @@ async function fetchPlaylistViaEmbed(
 
   const tracks: SpotifyTrack[] = trackList.map((t, i) => {
     const idMatch = t.uri.match(/spotify:track:(\w+)/);
-    // subtitle contains artists separated by non-breaking spaces and commas
     const artists = t.subtitle
       .replace(/\u00a0/g, " ")
       .split(",")
@@ -234,6 +257,56 @@ async function fetchPlaylistViaEmbed(
     tracks,
     source: "spotify",
   };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function findNestedKey(obj: any, key: string): string | undefined {
+  if (typeof obj !== "object" || obj === null) return undefined;
+  if (key in obj) return obj[key];
+  for (const v of Object.values(obj)) {
+    const found = findNestedKey(v, key);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+async function fetchTracksWithToken(
+  playlistId: string,
+  token: string
+): Promise<SpotifyTrack[]> {
+  const tracks: SpotifyTrack[] = [];
+  let url: string | null =
+    `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100`;
+
+  while (url) {
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+
+    if (!res.ok) throw new Error(`Spotify API: ${res.status}`);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const page: any = await res.json();
+
+    for (const item of page.items ?? []) {
+      const t = item?.track;
+      if (!t) continue;
+      tracks.push({
+        id: t.id,
+        name: t.name,
+        artists: (t.artists ?? []).map((a: { name: string }) => a.name),
+        album: t.album?.name ?? "",
+        duration_ms: t.duration_ms,
+        isrc: t.external_ids?.isrc,
+        spotify_url: t.external_urls?.spotify ?? "",
+      });
+    }
+
+    url = page.next;
+  }
+
+  return tracks;
 }
 
 /**
