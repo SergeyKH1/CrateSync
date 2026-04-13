@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "CrateSync",
+  "version": "1.0.0",
+  "description": "Add Bandcamp tracks to your wishlist or cart from CrateSync",
+  "permissions": [],
+  "host_permissions": ["*://*.bandcamp.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.bandcamp.com/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "externally_connectable": {
+    "matches": ["http://localhost:3000/*", "https://*.vercel.app/*"]
+  },
+  "icons": {}
+}
