@@ -98,11 +98,18 @@ function parseBandcampResults(html: string): BandcampResult[] {
       : undefined;
 
     if (title && itemUrl) {
+      // Decode HTML entities in the URL (e.g. &amp; → &)
+      const cleanUrl = itemUrl
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"');
+
       results.push({
         title,
         artist: artistName,
         album: albumName,
-        url: itemUrl,
+        url: cleanUrl,
         imageUrl,
         price,
         type,

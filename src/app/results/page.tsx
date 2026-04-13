@@ -59,16 +59,40 @@ function ResultsContent() {
 
   const handleWishlistAction = useCallback(
     (bcUrl: string, trackName: string, action: WishlistAction) => {
-      if (typeof chrome !== "undefined" && chrome && chrome.runtime) {
-        chrome.runtime.sendMessage("cratesync-extension-placeholder-id", {
-          type: "CRATESYNC_ADD",
-          action,
-          url: bcUrl,
-          trackName,
-        });
-      } else {
-        window.open(bcUrl, "_blank");
+      // Strip Bandcamp search params to get a clean URL
+      const cleanUrl = bcUrl.split("?")[0];
+
+      // Try the Chrome extension if available
+      if (
+        typeof chrome !== "undefined" &&
+        chrome?.runtime?.sendMessage
+      ) {
+        try {
+          chrome.runtime.sendMessage(
+            // The extension ID will be set after Chrome Web Store publish.
+            // For local development, use the ID from chrome://extensions
+            localStorage.getItem("cratesync_extension_id") || "",
+            {
+              type: "CRATESYNC_ADD",
+              action,
+              url: cleanUrl,
+              trackName,
+            },
+            (response: { success?: boolean } | undefined) => {
+              if (!response?.success) {
+                // Extension not available or failed — open link directly
+                window.open(cleanUrl, "_blank");
+              }
+            }
+          );
+          return;
+        } catch {
+          // Extension messaging failed
+        }
       }
+
+      // Fallback: open the Bandcamp page directly
+      window.open(cleanUrl, "_blank");
     },
     []
   );
