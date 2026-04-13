@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=300">
+  <title>CrateSync</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 280px;
+      background: #0a0a0a;
+      color: #e5e5e5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 20px;
+    }
+
+    .header {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #ffffff;
+      letter-spacing: -0.3px;
+    }
+
+    .status {
+      font-size: 13px;
+      color: #a3a3a3;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      flex-shrink: 0;
+    }
+
+    .open-btn {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background: #1d4ed8;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s;
+    }
+
+    .open-btn:hover {
+      background: #2563eb;
+    }
+
+    .version {
+      font-size: 11px;
+      color: #525252;
+      text-align: center;
+      margin-top: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">CrateSync</div>
+  <div class="status">
+    <span class="status-dot"></span>
+    Ready to sync tracks
+  </div>
+  <button class="open-btn" id="openBtn">Open CrateSync</button>
+  <div class="version" id="version">v1.0.0</div>
+  <script src="popup.js"></script>
+</body>
+</html>
