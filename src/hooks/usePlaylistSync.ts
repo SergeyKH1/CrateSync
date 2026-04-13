@@ -77,15 +77,15 @@ export function usePlaylistSync(url: string) {
             try {
               const event = JSON.parse(trimmed);
 
-              if (event.type === "progress") {
+              // Backend sends: { index, total, match }
+              if (event.match) {
+                matches.push(event.match as TrackMatch);
                 setProgress({
-                  total: playlist.tracks.length,
-                  completed: event.completed,
-                  current: event.current,
+                  total: event.total ?? playlist.tracks.length,
+                  completed: (event.index ?? 0) + 1,
+                  current: event.match.track?.name,
                   status: "searching",
                 });
-              } else if (event.type === "match") {
-                matches.push(event.data as TrackMatch);
               }
             } catch {
               // Skip malformed JSON lines
