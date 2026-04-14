@@ -383,7 +383,8 @@ async function fetchPlaylistWithToken(
   );
 
   if (!playlistRes.ok) {
-    throw new Error(`Spotify API error: ${playlistRes.status}`);
+    const errorBody = await playlistRes.text().catch(() => "");
+    throw new Error(`Spotify API error: ${playlistRes.status} ${errorBody}`);
   }
 
   interface SpotifyPlaylist {
@@ -395,7 +396,7 @@ async function fetchPlaylistWithToken(
 
   const tracks: SpotifyTrack[] = [];
   let nextUrl: string | null =
-    `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100`;
+    `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100&market=from_token`;
 
   while (nextUrl) {
     const tracksRes = await fetch(nextUrl, {
@@ -404,7 +405,10 @@ async function fetchPlaylistWithToken(
     });
 
     if (!tracksRes.ok) {
-      throw new Error(`Spotify API error fetching tracks: ${tracksRes.status}`);
+      const errorBody = await tracksRes.text().catch(() => "");
+      throw new Error(
+        `Spotify API error fetching tracks: ${tracksRes.status} ${errorBody}`
+      );
     }
 
     interface SpotifyPage {
