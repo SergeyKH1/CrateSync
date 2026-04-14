@@ -386,7 +386,7 @@ async function fetchPlaylistWithToken(
 ): Promise<PlaylistData> {
   const playlistRes = await fetch(
     `https://api.spotify.com/v1/playlists/${playlistId}`,
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }
   );
 
   if (!playlistRes.ok) {
@@ -407,6 +407,7 @@ async function fetchPlaylistWithToken(
   while (nextUrl) {
     const tracksRes = await fetch(nextUrl, {
       headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
     });
 
     if (!tracksRes.ok) {
