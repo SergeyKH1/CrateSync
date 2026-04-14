@@ -378,7 +378,7 @@ async function fetchPlaylistWithToken(
   token: string
 ): Promise<PlaylistData> {
   const playlistRes = await fetch(
-    `https://api.spotify.com/v1/playlists/${playlistId}`,
+    `https://api.spotify.com/v1/playlists/${playlistId}?market=from_token`,
     { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }
   );
 
@@ -389,6 +389,10 @@ async function fetchPlaylistWithToken(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const playlist: any = await playlistRes.json();
+
+  console.log(
+    `[fetchPlaylistWithToken] Playlist "${playlist.name}" - tracks.total: ${playlist.tracks?.total}, tracks.items.length: ${playlist.tracks?.items?.length}`
+  );
 
   // Extract tracks directly from the playlist response
   // (avoids separate /tracks call which can return 403 on some playlists)
