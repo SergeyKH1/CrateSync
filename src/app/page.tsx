@@ -67,7 +67,7 @@ export default function Home() {
             Buy Me a Coffee
           </a>
         </p>
-        <p className="mt-1 text-[10px] text-gray-700">v0.2.4</p>
+        <p className="mt-1 text-[10px] text-gray-700">v0.2.5</p>
       </footer>
     </main>
   );

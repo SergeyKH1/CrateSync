@@ -391,8 +391,15 @@ async function fetchPlaylistWithToken(
   const playlist: any = await playlistRes.json();
 
   console.log(
-    `[fetchPlaylistWithToken] Playlist "${playlist.name}" - tracks.total: ${playlist.tracks?.total}, tracks.items.length: ${playlist.tracks?.items?.length}`
+    `[fetchPlaylistWithToken] Playlist "${playlist.name}" - top-level keys: ${Object.keys(playlist).join(", ")}`
   );
+  if (playlist.tracks) {
+    console.log(
+      `[fetchPlaylistWithToken] tracks keys: ${Object.keys(playlist.tracks).join(", ")}, total: ${playlist.tracks.total}, items: ${playlist.tracks.items?.length}`
+    );
+  } else {
+    console.log(`[fetchPlaylistWithToken] NO tracks field. Full response: ${JSON.stringify(playlist).slice(0, 500)}`);
+  }
 
   // Extract tracks directly from the playlist response
   // (avoids separate /tracks call which can return 403 on some playlists)
