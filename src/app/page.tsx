@@ -12,7 +12,7 @@ export default function Home() {
       {/* Hero section */}
       <div className="flex flex-col items-center text-center space-y-6 max-w-2xl">
         <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 via-emerald-300 to-teal-400 bg-clip-text text-transparent">
-          CrateSync
+          SetForge
         </h1>
 
         <p className="text-lg text-gray-400 max-w-md">
@@ -67,7 +67,7 @@ export default function Home() {
             Buy Me a Coffee
           </a>
         </p>
-        <p className="mt-1 text-[10px] text-gray-700">v0.2.5</p>
+        <p className="mt-1 text-[10px] text-gray-700">v0.2.6</p>
       </footer>
     </main>
   );

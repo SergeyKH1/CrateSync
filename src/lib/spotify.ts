@@ -378,7 +378,7 @@ async function fetchPlaylistWithToken(
   token: string
 ): Promise<PlaylistData> {
   const playlistRes = await fetch(
-    `https://api.spotify.com/v1/playlists/${playlistId}?market=from_token&fields=name,description,images,tracks(total,next,items(track(id,name,artists(name),album(name),duration_ms,external_ids(isrc),external_urls(spotify))))`,
+    `https://api.spotify.com/v1/playlists/${playlistId}`,
     { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }
   );
 
@@ -427,20 +427,44 @@ async function fetchPlaylistWithToken(
     parseTracks(playlist.tracks.items);
   }
 
-  // Paginate if there are more tracks (playlist.tracks.next)
-  let nextUrl: string | null = playlist.tracks?.next ?? null;
-  while (nextUrl) {
-    const tracksRes = await fetch(nextUrl, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
+  // If playlist response didn't include tracks, fetch them separately
+  if (tracks.length === 0) {
+    let nextUrl: string | null =
+      `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100`;
 
-    if (!tracksRes.ok) break; // Got first page at least, stop paginating
+    while (nextUrl) {
+      const tracksRes = await fetch(nextUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const page: any = await tracksRes.json();
-    parseTracks(page.items ?? []);
-    nextUrl = page.next;
+      if (!tracksRes.ok) {
+        const errorBody = await tracksRes.text().catch(() => "");
+        console.log(`[fetchPlaylistWithToken] /tracks fallback failed: ${tracksRes.status} ${errorBody}`);
+        break;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const page: any = await tracksRes.json();
+      parseTracks(page.items ?? []);
+      nextUrl = page.next;
+    }
+  } else {
+    // Paginate if there are more tracks (playlist.tracks.next)
+    let nextUrl: string | null = playlist.tracks?.next ?? null;
+    while (nextUrl) {
+      const tracksRes = await fetch(nextUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+
+      if (!tracksRes.ok) break;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const page: any = await tracksRes.json();
+      parseTracks(page.items ?? []);
+      nextUrl = page.next;
+    }
   }
 
   return {
