@@ -387,51 +387,48 @@ async function fetchPlaylistWithToken(
     throw new Error(`Spotify API error: ${playlistRes.status} ${errorBody}`);
   }
 
-  interface SpotifyPlaylist {
-    name: string;
-    description?: string;
-    images?: { url: string }[];
-  }
-  const playlist: SpotifyPlaylist = await playlistRes.json();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const playlist: any = await playlistRes.json();
 
+  // Extract tracks directly from the playlist response
+  // (avoids separate /tracks call which can return 403 on some playlists)
   const tracks: SpotifyTrack[] = [];
-  let nextUrl: string | null =
-    `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100&market=from_token`;
 
-  while (nextUrl) {
-    const tracksRes = await fetch(nextUrl, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-
-    if (!tracksRes.ok) {
-      const errorBody = await tracksRes.text().catch(() => "");
-      throw new Error(
-        `Spotify API error fetching tracks: ${tracksRes.status} ${errorBody}`
-      );
-    }
-
-    interface SpotifyPage {
-      items: Array<{ track: Record<string, unknown> | null }>;
-      next: string | null;
-    }
-    const page: SpotifyPage = await tracksRes.json();
-
-    for (const item of page.items) {
-      if (!item.track) continue;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const t = item.track as any;
+  // Parse first page of tracks from playlist response
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function parseTracks(items: any[]) {
+    for (const item of items) {
+      const t = item?.track;
+      if (!t) continue;
       tracks.push({
         id: t.id,
         name: t.name,
-        artists: t.artists.map((a: { name: string }) => a.name),
+        artists: (t.artists ?? []).map((a: { name: string }) => a.name),
         album: t.album?.name ?? "",
         duration_ms: t.duration_ms,
         isrc: t.external_ids?.isrc,
         spotify_url: t.external_urls?.spotify ?? "",
       });
     }
+  }
 
+  if (playlist.tracks?.items) {
+    parseTracks(playlist.tracks.items);
+  }
+
+  // Paginate if there are more tracks (playlist.tracks.next)
+  let nextUrl: string | null = playlist.tracks?.next ?? null;
+  while (nextUrl) {
+    const tracksRes = await fetch(nextUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+
+    if (!tracksRes.ok) break; // Got first page at least, stop paginating
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const page: any = await tracksRes.json();
+    parseTracks(page.items ?? []);
     nextUrl = page.next;
   }
 
