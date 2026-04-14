@@ -21,14 +21,10 @@ export async function POST(request: NextRequest) {
     let updatedSession: typeof session = null;
 
     if (session) {
-      try {
-        const result = await getValidToken(session);
-        userToken = result.token;
-        if (result.session !== session) {
-          updatedSession = result.session;
-        }
-      } catch {
-        // Session invalid, proceed without user token
+      const result = await getValidToken(session);
+      userToken = result.token;
+      if (result.session !== session) {
+        updatedSession = result.session;
       }
     }
 

@@ -332,14 +332,7 @@ export async function fetchPlaylist(
 
   // If user is logged in with Spotify, use their token (handles private playlists)
   if (userToken) {
-    try {
-      return await fetchPlaylistWithToken(parsed.id, userToken);
-    } catch (userTokenError) {
-      console.warn(
-        "User token fetch failed, trying embed fallback:",
-        userTokenError instanceof Error ? userTokenError.message : userTokenError
-      );
-    }
+    return await fetchPlaylistWithToken(parsed.id, userToken);
   }
 
   // Primary: use embed page (works for all public playlists, no auth needed)
